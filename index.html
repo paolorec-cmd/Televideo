@@ -41,11 +41,27 @@
   }
   .navbtn:active { background: #2a2a2a; }
   #refreshBtn { margin-left: auto; }
+
+  .subbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px; background: #0a0a0a;
+    border-bottom: 1px solid #1e1e1e;
+  }
+  .subbar .sublabel { color: #888; font-size: 12px; white-space: nowrap; }
+  .subnavbtn {
+    background: #151515; color: #fff; border: 1px solid #333; border-radius: 6px;
+    width: 32px; height: 28px; font-size: 14px; font-weight: 700;
+  }
+  .subnavbtn:active { background: #2a2a2a; }
+  #subIndicator {
+    color: #00e5ff; font-weight: 700; font-size: 13px; min-width: 30px; text-align: center;
+  }
+
   main {
-    flex: 1; display: flex; align-items: flex-start; justify-content: center;
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
     overflow: auto; position: relative; background: #000;
   }
-  #pageImg { width: 100%; max-width: 640px; display: block; touch-action: pan-y; }
+  #pageImg { width: 100%; min-width: 0; display: block; touch-action: pan-y; }
   #status {
     position: absolute; top: 40%; left: 0; right: 0; text-align: center;
     color: #666; font-size: 14px; padding: 0 20px;
@@ -74,6 +90,13 @@
   <button class="navbtn" id="refreshBtn">⟳</button>
 </header>
 
+<div class="subbar">
+  <span class="sublabel">Sottopagina</span>
+  <button class="subnavbtn" id="subPrevBtn">‹</button>
+  <span id="subIndicator">1</span>
+  <button class="subnavbtn" id="subNextBtn">›</button>
+</div>
+
 <main>
   <div id="status">Caricamento pagina…</div>
   <img id="pageImg" alt="Televideo" style="display:none">
@@ -82,7 +105,7 @@
 <div class="shortcuts" id="shortcuts"></div>
 
 <script>
-  const IMG_BASE = 'https://televideo-proxy.paolo-rec.workers.dev/?page=';
+  const IMG_BASE = 'https://televideo-proxy.paolo-rec.workers.dev/';
   const shortcuts = [
     [100, 'Indice'], [101, 'Prima pag.'], [102, 'Sommario'],
     [111, 'Interni'], [120, 'Economia'], [150, 'Sport'],
@@ -94,8 +117,10 @@
   const status = document.getElementById('status');
   const pageInput = document.getElementById('pageInput');
   const shortcutsEl = document.getElementById('shortcuts');
+  const subIndicator = document.getElementById('subIndicator');
 
   let currentPage = 100;
+  let currentSub = 1;
 
   function clampPage(p) {
     p = parseInt(p, 10);
@@ -105,13 +130,39 @@
 
   function loadPage(p, opts = {}) {
     currentPage = clampPage(p);
+    currentSub = opts.sub || 1;
     pageInput.value = currentPage;
+    subIndicator.textContent = currentSub;
     status.textContent = 'Caricamento pagina…';
     status.classList.remove('hidden');
     pageImg.style.display = 'none';
 
-    const bust = opts.forceRefresh ? ('?t=' + Date.now()) : '';
-    pageImg.src = IMG_BASE + currentPage + bust;
+    const bust = opts.forceRefresh ? ('&t=' + Date.now()) : '';
+    pageImg.src = IMG_BASE + '?page=' + currentPage + '&sub=' + currentSub + bust;
+  }
+
+  function loadSub(delta) {
+    const newSub = currentSub + delta;
+    if (newSub < 1) return;
+    const prevSub = currentSub;
+    currentSub = newSub;
+    subIndicator.textContent = currentSub;
+    status.textContent = 'Caricamento…';
+    status.classList.remove('hidden');
+
+    const testImg = new Image();
+    testImg.onload = () => {
+      pageImg.src = testImg.src;
+      status.classList.add('hidden');
+      pageImg.style.display = 'block';
+    };
+    testImg.onerror = () => {
+      currentSub = prevSub;
+      subIndicator.textContent = currentSub;
+      status.textContent = 'Nessuna altra sottopagina';
+      setTimeout(() => { status.classList.add('hidden'); }, 1500);
+    };
+    testImg.src = IMG_BASE + '?page=' + currentPage + '&sub=' + currentSub;
   }
 
   pageImg.onload = () => {
@@ -124,7 +175,9 @@
 
   document.getElementById('prevBtn').onclick = () => loadPage(currentPage - 1);
   document.getElementById('nextBtn').onclick = () => loadPage(currentPage + 1);
-  document.getElementById('refreshBtn').onclick = () => loadPage(currentPage, { forceRefresh: true });
+  document.getElementById('refreshBtn').onclick = () => loadPage(currentPage, { forceRefresh: true, sub: currentSub });
+  document.getElementById('subPrevBtn').onclick = () => loadSub(-1);
+  document.getElementById('subNextBtn').onclick = () => loadSub(1);
 
   pageInput.addEventListener('change', () => loadPage(pageInput.value));
   pageInput.addEventListener('keydown', (e) => {
@@ -142,7 +195,7 @@
   // Swipe left/right per cambiare pagina
   let touchStartX = null;
   document.querySelector('main').addEventListener('touchstart', (e) => {
-touchStartX = e.touches[0].clientX;
+    touchStartX = e.touches[0].clientX;
   }, { passive: true });
   document.querySelector('main').addEventListener('touchend', (e) => {
     if (touchStartX === null) return;
