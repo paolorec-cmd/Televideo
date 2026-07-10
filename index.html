@@ -142,3 +142,19 @@
   // Swipe left/right per cambiare pagina
   let touchStartX = null;
   document.querySelector('main').addEventListener('touchstart', (e) => {
+touchStartX = e.touches[0].clientX;
+  }, { passive: true });
+  document.querySelector('main').addEventListener('touchend', (e) => {
+    if (touchStartX === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 60) {
+      dx < 0 ? loadPage(currentPage + 1) : loadPage(currentPage - 1);
+    }
+    touchStartX = null;
+  }, { passive: true });
+
+  loadPage(100);
+</script>
+
+</body>
+</html>
