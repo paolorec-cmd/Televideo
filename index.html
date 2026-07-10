@@ -14,13 +14,12 @@
   :root { color-scheme: dark; }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
-    margin: 0; padding: 0; height: 100%;
+    margin: 0; padding: 0;
     background: #000; color: #fff;
     font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
     overscroll-behavior: none;
   }
   body {
-    display: flex; flex-direction: column;
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
   }
@@ -57,18 +56,15 @@
     color: #00e5ff; font-weight: 700; font-size: 13px; min-width: 30px; text-align: center;
   }
 
-  main {
-    main {
-    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-    overflow: auto; position: relative; background: #000;
-  }
-  }
-  #pageImg { width: 100%; min-width: 0; display: block; touch-action: pan#pageImg { width: 100%; min-width: 0; display: block; touch-action: pan-y; }
   #status {
-    position: absolute; top: 40%; left: 0; right: 0; text-align: center;
-    color: #666; font-size: 14px; padding: 0 20px;
+    text-align: center; color: #666; font-size: 14px; padding: 40px 20px;
+    background: #000;
   }
   #status.hidden { display: none; }
+
+  #pageImg { width: 100%; display: block; touch-action: pan-y; background: #000; }
+  #pageImg.hidden { display: none; }
+
   .shortcuts {
     display: flex; gap: 8px; padding: 10px 12px; overflow-x: auto;
     background: #0a0a0a; border-top: 1px solid #1e1e1e;
@@ -99,10 +95,8 @@
   <button class="subnavbtn" id="subNextBtn">›</button>
 </div>
 
-<main>
-  <div id="status">Caricamento pagina…</div>
-  <img id="pageImg" alt="Televideo" style="display:none">
-</main>
+<div id="status">Caricamento pagina…</div>
+<img id="pageImg" alt="Televideo" class="hidden" touch-action="pan-y">
 
 <div class="shortcuts" id="shortcuts"></div>
 
@@ -137,7 +131,7 @@
     subIndicator.textContent = currentSub;
     status.textContent = 'Caricamento pagina…';
     status.classList.remove('hidden');
-    pageImg.style.display = 'none';
+    pageImg.classList.add('hidden');
 
     const bust = opts.forceRefresh ? ('&t=' + Date.now()) : '';
     pageImg.src = IMG_BASE + '?page=' + currentPage + '&sub=' + currentSub + bust;
@@ -149,30 +143,28 @@
     const prevSub = currentSub;
     currentSub = newSub;
     subIndicator.textContent = currentSub;
-    status.textContent = 'Caricamento…';
-    status.classList.remove('hidden');
 
     const testImg = new Image();
     testImg.onload = () => {
       pageImg.src = testImg.src;
       status.classList.add('hidden');
-      pageImg.style.display = 'block';
+      pageImg.classList.remove('hidden');
     };
     testImg.onerror = () => {
       currentSub = prevSub;
       subIndicator.textContent = currentSub;
-      status.textContent = 'Nessuna altra sottopagina';
-      setTimeout(() => { status.classList.add('hidden'); }, 1500);
     };
     testImg.src = IMG_BASE + '?page=' + currentPage + '&sub=' + currentSub;
   }
 
   pageImg.onload = () => {
     status.classList.add('hidden');
-    pageImg.style.display = 'block';
+    pageImg.classList.remove('hidden');
   };
   pageImg.onerror = () => {
     status.textContent = 'Pagina ' + currentPage + ' non disponibile';
+    status.classList.remove('hidden');
+    pageImg.classList.add('hidden');
   };
 
   document.getElementById('prevBtn').onclick = () => loadPage(currentPage - 1);
@@ -194,12 +186,11 @@
     shortcutsEl.appendChild(chip);
   });
 
-  // Swipe left/right per cambiare pagina
   let touchStartX = null;
-  document.querySelector('main').addEventListener('touchstart', (e) => {
+  pageImg.addEventListener('touchstart', (e) => {
     touchStartX = e.touches[0].clientX;
   }, { passive: true });
-  document.querySelector('main').addEventListener('touchend', (e) => {
+  pageImg.addEventListener('touchend', (e) => {
     if (touchStartX === null) return;
     const dx = e.changedTouches[0].clientX - touchStartX;
     if (Math.abs(dx) > 60) {
