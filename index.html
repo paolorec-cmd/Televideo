@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Televideo">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#000000">
+<title>Televideo Nazionale</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23000'/%3E%3Ctext x='50' y='62' font-size='40' fill='%2300e5ff' text-anchor='middle' font-family='monospace' font-weight='bold'%3ETV%3C/text%3E%3C/svg%3E">
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: #000; color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    overscroll-behavior: none;
+  }
+  body {
+    display: flex; flex-direction: column;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px; background: #0a0a0a;
+    border-bottom: 1px solid #1e1e1e;
+  }
+  header .logo { color: #00e5ff; font-weight: 800; letter-spacing: 0.5px; font-size: 15px; white-space: nowrap; }
+  #pageInput {
+    width: 64px; text-align: center; font-size: 17px; font-weight: 700;
+    background: #151515; color: #ffdd00; border: 1px solid #333; border-radius: 8px;
+    padding: 7px 4px; font-variant-numeric: tabular-nums;
+  }
+  .navbtn {
+    background: #151515; color: #fff; border: 1px solid #333; border-radius: 8px;
+    width: 40px; height: 36px; font-size: 18px; font-weight: 700;
+  }
+  .navbtn:active { background: #2a2a2a; }
+  #refreshBtn { margin-left: auto; }
+  main {
+    flex: 1; display: flex; align-items: flex-start; justify-content: center;
+    overflow: auto; position: relative; background: #000;
+  }
+  #pageImg { width: 100%; max-width: 640px; display: block; touch-action: pan-y; }
+  #status {
+    position: absolute; top: 40%; left: 0; right: 0; text-align: center;
+    color: #666; font-size: 14px; padding: 0 20px;
+  }
+  #status.hidden { display: none; }
+  .shortcuts {
+    display: flex; gap: 8px; padding: 10px 12px; overflow-x: auto;
+    background: #0a0a0a; border-top: 1px solid #1e1e1e;
+    -webkit-overflow-scrolling: touch;
+  }
+  .shortcuts::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: 0 0 auto; background: #151515; color: #00e5ff; border: 1px solid #2a2a2a;
+    border-radius: 16px; padding: 7px 14px; font-size: 13px; font-weight: 600;
+  }
+  .chip:active { background: #2a2a2a; }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="logo">📺 TELEVIDEO</span>
+  <button class="navbtn" id="prevBtn">‹</button>
+  <input id="pageInput" inputmode="numeric" pattern="[0-9]*" maxlength="3" value="100">
+  <button class="navbtn" id="nextBtn">›</button>
+  <button class="navbtn" id="refreshBtn">⟳</button>
+</header>
+
+<main>
+  <div id="status">Caricamento pagina…</div>
+  <img id="pageImg" alt="Televideo" style="display:none">
+</main>
+
+<div class="shortcuts" id="shortcuts"></div>
+
+<script>
+  const IMG_BASE = 'http://www.televideo.it/televideo/pub/tt4web/Nazionale/16_9_page-';
+  const shortcuts = [
+    [100, 'Indice'], [101, 'Prima pag.'], [102, 'Sommario'],
+    [111, 'Interni'], [120, 'Economia'], [150, 'Sport'],
+    [160, 'Calcio'], [180, 'Meteo'], [223, 'Borsa'],
+    [300, 'Cronaca'], [500, 'Regioni'], [700, 'Guida TV']
+  ];
+
+  const pageImg = document.getElementById('pageImg');
+  const status = document.getElementById('status');
+  const pageInput = document.getElementById('pageInput');
+  const shortcutsEl = document.getElementById('shortcuts');
+
+  let currentPage = 100;
+
+  function clampPage(p) {
+    p = parseInt(p, 10);
+    if (isNaN(p)) return 100;
+    return Math.min(999, Math.max(100, p));
+  }
+
+  function loadPage(p, opts = {}) {
+    currentPage = clampPage(p);
+    pageInput.value = currentPage;
+    status.textContent = 'Caricamento pagina…';
+    status.classList.remove('hidden');
+    pageImg.style.display = 'none';
+
+    const bust = opts.forceRefresh ? ('?t=' + Date.now()) : '';
+    pageImg.src = IMG_BASE + currentPage + '.png' + bust;
+  }
+
+  pageImg.onload = () => {
+    status.classList.add('hidden');
+    pageImg.style.display = 'block';
+  };
+  pageImg.onerror = () => {
+    status.textContent = 'Pagina ' + currentPage + ' non disponibile';
+  };
+
+  document.getElementById('prevBtn').onclick = () => loadPage(currentPage - 1);
+  document.getElementById('nextBtn').onclick = () => loadPage(currentPage + 1);
+  document.getElementById('refreshBtn').onclick = () => loadPage(currentPage, { forceRefresh: true });
+
+  pageInput.addEventListener('change', () => loadPage(pageInput.value));
+  pageInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { pageInput.blur(); loadPage(pageInput.value); }
+  });
+
+  shortcuts.forEach(([num, label]) => {
+    const chip = document.createElement('button');
+    chip.className = 'chip';
+    chip.textContent = num + ' · ' + label;
+    chip.onclick = () => loadPage(num);
+    shortcutsEl.appendChild(chip);
+  });
+
+  // Swipe left/right per cambiare pagina
+  let touchStartX = null;
+  document.querySelector('main').addEventListener('touchstart', (e) => {
