@@ -82,7 +82,7 @@
 <div class="shortcuts" id="shortcuts"></div>
 
 <script>
-  const IMG_BASE = 'http://www.televideo.it/televideo/pub/tt4web/Nazionale/16_9_page-';
+  const IMG_BASE = 'https://televideo-proxy.paolo-rec.workers.dev/?page=';
   const shortcuts = [
     [100, 'Indice'], [101, 'Prima pag.'], [102, 'Sommario'],
     [111, 'Interni'], [120, 'Economia'], [150, 'Sport'],
@@ -111,7 +111,7 @@
     pageImg.style.display = 'none';
 
     const bust = opts.forceRefresh ? ('?t=' + Date.now()) : '';
-    pageImg.src = IMG_BASE + currentPage + '.png' + bust;
+    pageImg.src = IMG_BASE + currentPage + bust;
   }
 
   pageImg.onload = () => {
